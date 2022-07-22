@@ -46,11 +46,11 @@ contract Master {
         shop.push(ShopItem("Cupcake", 160));
     }
 
-    function registerPlayer(address _ownerAddress, string memory username)
-        public
-    {
-        players.push(Player(_ownerAddress, username, 0));
-        emit NewPlayer(_ownerAddress, username);
+    function registerPlayer(string memory username) public {
+        Player memory player = Player(msg.sender, username, 0);
+
+        players.push(player);
+        emit NewPlayer(msg.sender, username);
     }
 
     function updateProfile(address _ownerAddress, string memory newUsername)
