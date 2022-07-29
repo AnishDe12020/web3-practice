@@ -13,6 +13,12 @@ contract Master {
         string oldUsername,
         string newUsername
     );
+    event PlayerMadeMoney(
+        address ownerAddress,
+        uint256 amount,
+        uint256 oldCoins,
+        uint256 newCoins
+    );
 
     struct ShopItem {
         string name;
@@ -32,6 +38,19 @@ contract Master {
 
     constructor() {
         addMockShopData();
+    }
+
+    function random() private view returns (uint256) {
+        return
+            uint256(
+                keccak256(
+                    abi.encodePacked(
+                        block.difficulty,
+                        block.timestamp,
+                        msg.sender
+                    )
+                )
+            );
     }
 
     function addMockShopData() private {
@@ -108,5 +127,13 @@ contract Master {
         string memory oldUsername = player.username;
         player.username = newUsername;
         emit PlayerProfileUpdated(msg.sender, oldUsername, newUsername);
+    }
+
+    function work() public {
+        Player storage player = players[addressToPlayerIndex[msg.sender]];
+        uint256 oldCoins = player.coins;
+        uint256 coinsMade = ((random() % 100) * 10);
+        player.coins += coinsMade;
+        emit PlayerMadeMoney(msg.sender, player.coins, oldCoins, player.coins);
     }
 }
