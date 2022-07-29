@@ -81,4 +81,26 @@ describe("Player", async () => {
       "You already have a player"
     );
   });
+
+  it("should work", async () => {
+    const { contract, owner } = await loadFixture(deployContract);
+
+    const username = "random username";
+
+    await contract.registerPlayer(username);
+
+    const playerIndex = await contract.addressToPlayerIndex(owner.address);
+
+    const oldCoins = await (await contract.players(playerIndex)).coins;
+
+    const res = await contract.work();
+
+    const newCoins = await (await contract.players(playerIndex)).coins;
+
+    const amountEarned = newCoins.sub(oldCoins);
+
+    expect(res)
+      .to.emit(contract, "PlayerMadeMoney")
+      .withArgs(owner.address, amountEarned, oldCoins, newCoins);
+  });
 });
