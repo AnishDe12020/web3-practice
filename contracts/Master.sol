@@ -30,9 +30,20 @@ contract Master {
     mapping(address => string) public addressToUsername;
     mapping(address => uint256) public addressToCoins;
     mapping(string => address) public usernameToAddress;
+    mapping(address => uint256) public nextReadyToWorkTime;
+
+    uint256 cooldownTime = 1 days;
 
     constructor() {
         addMockShopData();
+    }
+
+    modifier isReadyToWork(address _player) {
+        require(
+            nextReadyToWorkTime[_player] < block.timestamp,
+            "Already worked today"
+        );
+        _;
     }
 
     function random() private view returns (uint256) {
@@ -46,6 +57,10 @@ contract Master {
                     )
                 )
             );
+    }
+
+    function _triggerCooldown(address _player) internal {
+        nextReadyToWorkTime[_player] = block.timestamp + cooldownTime;
     }
 
     function addMockShopData() private {
@@ -114,10 +129,11 @@ contract Master {
         emit PlayerProfileUpdated(msg.sender, oldUsername, newUsername);
     }
 
-    function work() public {
+    function work() public isReadyToWork(msg.sender) {
         uint256 oldCoins = addressToCoins[msg.sender];
         uint256 coinsMade = ((random() % 100) * 10);
         addressToCoins[msg.sender] += coinsMade;
+        _triggerCooldown(msg.sender);
         emit PlayerMadeMoney(
             msg.sender,
             coinsMade,
