@@ -1,6 +1,7 @@
 import { ethers } from "hardhat";
 import { expect } from "chai";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
+import { increaseDays } from "./helper/time";
 
 const deployContract = async () => {
   const [owner, otherAccount] = await ethers.getSigners();
@@ -11,7 +12,17 @@ const deployContract = async () => {
   return { contract, owner, otherAccount };
 };
 
-describe("Player", async () => {
+const deployContractAndRegisterAPlayer = async () => {
+  const { contract, owner, otherAccount } = await deployContract();
+
+  const username = "random username";
+
+  await contract.registerPlayer(username);
+
+  return { contract, owner, otherAccount };
+};
+
+describe("Account registration", async () => {
   it("should create a player", async () => {
     const { contract, owner } = await loadFixture(deployContract);
 
@@ -81,13 +92,13 @@ describe("Player", async () => {
       "You already have a player"
     );
   });
+});
 
+describe("Work", async () => {
   it("should work", async () => {
-    const { contract, owner } = await loadFixture(deployContract);
-
-    const username = "random username";
-
-    await contract.registerPlayer(username);
+    const { contract, owner } = await loadFixture(
+      deployContractAndRegisterAPlayer
+    );
 
     const oldCoins = await contract.addressToCoins(owner.address);
 
@@ -100,5 +111,25 @@ describe("Player", async () => {
     expect(res)
       .to.emit(contract, "PlayerMadeMoney")
       .withArgs(owner.address, amountEarned, oldCoins, newCoins);
+  });
+
+  it("player should not work twice in a day", async () => {
+    const { contract } = await loadFixture(deployContractAndRegisterAPlayer);
+
+    await contract.work();
+
+    await expect(contract.work()).to.be.revertedWith("Already worked today");
+  });
+
+  it("player should be able to work after 1 day", async () => {
+    const { contract } = await loadFixture(deployContractAndRegisterAPlayer);
+
+    await contract.work();
+
+    await increaseDays(1);
+
+    console.log("increased");
+
+    await contract.work();
   });
 });
