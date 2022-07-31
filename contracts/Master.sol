@@ -25,16 +25,11 @@ contract Master {
         uint256 price;
     }
 
-    struct Player {
-        address ownerAddress;
-        string username;
-        uint256 coins;
-    }
-
-    Player[] public players;
     ShopItem[] public shop;
 
-    mapping(address => uint256) public addressToPlayerIndex;
+    mapping(address => string) public addressToUsername;
+    mapping(address => uint256) public addressToCoins;
+    mapping(string => address) public usernameToAddress;
 
     constructor() {
         addMockShopData();
@@ -79,24 +74,15 @@ contract Master {
         view
         returns (bool)
     {
-        for (uint256 i = 0; i < players.length; i++) {
-            if (
-                keccak256(abi.encodePacked(players[i].username)) ==
-                keccak256(abi.encodePacked(username))
-            ) {
-                return true;
-            }
-        }
-        return false;
+        return
+            usernameToAddress[username] !=
+            0x0000000000000000000000000000000000000000;
     }
 
     function addressHasPlayer(address ownerAddress) public view returns (bool) {
-        for (uint256 i = 0; i < players.length; i++) {
-            if (players[i].ownerAddress == ownerAddress) {
-                return true;
-            }
-        }
-        return false;
+        return
+            keccak256(abi.encodePacked(addressToUsername[ownerAddress])) !=
+            keccak256(abi.encodePacked(""));
     }
 
     function registerPlayer(string memory username) public {
@@ -115,25 +101,28 @@ contract Master {
             "You already have a player"
         );
 
-        Player memory player = Player(msg.sender, username, 0);
+        addressToUsername[msg.sender] = username;
+        usernameToAddress[username] = msg.sender;
+        addressToCoins[msg.sender] = 0;
 
-        players.push(player);
-        addressToPlayerIndex[msg.sender] = players.length - 1;
         emit NewPlayer(msg.sender, username);
     }
 
     function updatePlayer(string memory newUsername) public {
-        Player memory player = players[addressToPlayerIndex[msg.sender]];
-        string memory oldUsername = player.username;
-        player.username = newUsername;
+        string memory oldUsername = addressToUsername[msg.sender];
+        addressToUsername[msg.sender] = newUsername;
         emit PlayerProfileUpdated(msg.sender, oldUsername, newUsername);
     }
 
     function work() public {
-        Player storage player = players[addressToPlayerIndex[msg.sender]];
-        uint256 oldCoins = player.coins;
+        uint256 oldCoins = addressToCoins[msg.sender];
         uint256 coinsMade = ((random() % 100) * 10);
-        player.coins += coinsMade;
-        emit PlayerMadeMoney(msg.sender, player.coins, oldCoins, player.coins);
+        addressToCoins[msg.sender] += coinsMade;
+        emit PlayerMadeMoney(
+            msg.sender,
+            coinsMade,
+            oldCoins,
+            addressToCoins[msg.sender]
+        );
     }
 }

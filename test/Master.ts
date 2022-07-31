@@ -89,13 +89,11 @@ describe("Player", async () => {
 
     await contract.registerPlayer(username);
 
-    const playerIndex = await contract.addressToPlayerIndex(owner.address);
-
-    const oldCoins = await (await contract.players(playerIndex)).coins;
+    const oldCoins = await contract.addressToCoins(owner.address);
 
     const res = await contract.work();
 
-    const newCoins = await (await contract.players(playerIndex)).coins;
+    const newCoins = await contract.addressToCoins(owner.address);
 
     const amountEarned = newCoins.sub(oldCoins);
 
